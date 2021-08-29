@@ -12,6 +12,6 @@ router.route('/api/users/:userId')
     .put(userCtrl.update)
     .delete(userCtrl.remove)
 
-router.param('userId' userCtrl.userByID)
+router.param('userId', userCtrl.userByID)
 
 export default router

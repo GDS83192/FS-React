@@ -1,6 +1,7 @@
-import User from '../models/user/user.model'
-import extend from 'lodash/extend'
-import errorHandler from './error.controller'
+import User from '../../models/user.model.js'
+import extend from 'lodash/extend.js'
+import errorHandler from '../../helpers/dbErrorHandler.js'
+import rest from 'lodash/rest.js'
 
 const create = async(req, res) => {
     const user  = new User(req.body)
@@ -17,11 +18,70 @@ const create = async(req, res) => {
 }
 
 
-const list = (req, res) => {}
-const userById = (req, res, next, id) => {}
-const read = (req, res) => {}
-const update = (req, res, next) => {}
-const remove = (req, res, next) => {}
+const list = async (req, res) => {
+    try{
+        let users = await User.find().select('name email update created')
+        res.json(users)
+    } catch (err) {
+        return res.status(400).json({
+            error: errorHandler.getErrorMessage(err)
+        })
+    }
+}
+
+
+const userById = async (req, res, next, id) => {
+    try{
+        let user = await User.findById(id)
+        if (!user)
+            return res.status('400').json({
+                error: 'User not found'
+            })
+        req.profile = user
+        next()
+    } catch (err) {
+        return res.status('400').json({
+            error: "Could not retrieve user"
+        })
+    }
+}
+
+
+const read = (req, res) => {
+    req.profile.hashed_password = undefined
+    req.profile.salt = undefined
+    return res.json(req.profile)
+}
+
+const update = async (req, res, next) => {
+    try{
+        let user = req.profile
+        user = extend(user, req.body)
+        user.updated = Date.now()
+        await user.save()
+        user.hashed_password = undefined
+        user.salt = undefined
+        res.json(user)
+    } catch (err) {
+        return res.status(400).json({
+            error: errorHandler.getErrorMessage(err)
+        })
+    }
+}
+
+const remove = async (req, res) => {
+    try {
+        let user = req.profile
+        let deletedUser = await user.remove()
+        deletedUser.hashed_password = undefined
+        deletedUser.salt = undefined
+        res.json(deletedUser)
+    } catch (err) {
+        return res.status(400).json({
+            error: errorHandler.getErrorMessage(err)
+        })
+    }
+}
 
 export default {create, userById, read, list, remove, update}
     
